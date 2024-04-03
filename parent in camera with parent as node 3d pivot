@@ -1,0 +1,50 @@
+extends Camera3D
+
+var Parent = null
+var CameraSensitivity = 100
+var ZoomDistance = 3
+
+var MOUSE_LEFT_DOWN = false
+var MOUSE_RIGHT_DOWN = false
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	Parent = get_parent_node_3d()
+	pass # Replace with function body.
+
+func _input(event):
+	if event is InputEventMouseButton:
+		if event.button_index == 1:
+			if event.is_pressed():
+				MOUSE_LEFT_DOWN = true 
+			else:
+				MOUSE_LEFT_DOWN = false
+				
+		elif event.button_index == 2:
+			if event.is_pressed():
+				Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
+				MOUSE_RIGHT_DOWN = true 
+			else:
+				Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+				MOUSE_RIGHT_DOWN = false
+		
+		elif event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			ZoomDistance -= 1
+			
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			ZoomDistance += 1
+	pass
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+	var VIEWPORT = get_viewport()
+	var MOUSE_POSITION = VIEWPORT.get_mouse_position()
+	var MOUSE_POSITION_CENTERED = Vector2(MOUSE_POSITION.x - VIEWPORT.size.x/ 2, MOUSE_POSITION.y - VIEWPORT.size.y / 2)
+	if MOUSE_RIGHT_DOWN:
+		var MOUSE_ROTATION_VECTOR = Vector3(-MOUSE_POSITION_CENTERED.y, -MOUSE_POSITION_CENTERED.x, 0)
+		Parent.rotation_degrees += MOUSE_ROTATION_VECTOR * CameraSensitivity * delta
+		Input.warp_mouse(get_viewport().size / 2)
+		
+	position.z = ZoomDistance
+		
+	pass
