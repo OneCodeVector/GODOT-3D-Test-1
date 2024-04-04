@@ -1,0 +1,95 @@
+extends CharacterBody3D
+
+# Get the gravity from the project settings to be synced with RigidBody nodes.
+
+func _physics_process(delta):
+	# Add the gravity.
+	if not is_on_floor():
+		velocity.y -= get_meta("Gravity") * delta
+
+	# Handle jump.
+	if Input.is_action_pressed("ui_accept") and is_on_floor():
+		velocity.y = get_meta("JumpForce")
+
+	# Get the input direction and handle the movement/deceleration.
+	# As good practice, you should replace UI actions with custom gameplay actions.
+	var input_dir = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+	var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	var SPEED = get_meta("MovementSpeed")
+	if direction:
+		velocity.x = direction.x * SPEED
+		velocity.z = direction.z * SPEED
+	else:
+		velocity.x = move_toward(velocity.x, 0, SPEED)
+		velocity.z = move_toward(velocity.z, 0, SPEED)
+
+	move_and_slide()
+
+
+
+
+
+
+
+# camera
+
+extends Camera3D
+
+var Parent = null
+var Player = null
+var ZoomDistance = 3
+
+var MOUSE_LEFT_DOWN = false
+var MOUSE_RIGHT_DOWN = false
+
+var SavedMousePosition = Vector2.ZERO
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	Parent = get_parent_node_3d()
+	Player = Parent.get_parent()
+	pass # Replace with function body.
+
+func _input(event):
+	if event is InputEventMouseButton:
+		var MousePosition = get_viewport().get_mouse_position() 
+		
+		if event.button_index == 1:
+			if event.is_pressed():
+				MOUSE_LEFT_DOWN = true 
+			else:
+				MOUSE_LEFT_DOWN = false
+				
+		elif event.button_index == 2:
+			if event.is_pressed():
+				SavedMousePosition = MousePosition
+				Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
+				MOUSE_RIGHT_DOWN = true 
+			else:
+				Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+				MOUSE_RIGHT_DOWN = false
+		
+		elif event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			ZoomDistance -= 1
+			
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			ZoomDistance += 1
+			
+	ZoomDistance = clamp(ZoomDistance, 0, Player.get_meta("MaxZoomDistance"))
+	pass
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+	var VIEWPORT = get_viewport()
+	var MOUSE_POSITION = VIEWPORT.get_mouse_position()
+	var MOUSE_POSITION_FROM_SAVED = Vector2(MOUSE_POSITION.x - SavedMousePosition.x, MOUSE_POSITION.y - SavedMousePosition.y)
+	if MOUSE_RIGHT_DOWN:
+		var MOUSE_ROTATION_VECTOR = Vector3(-MOUSE_POSITION_FROM_SAVED.y, -MOUSE_POSITION_FROM_SAVED.x, 0)
+		var ROTATION_VECTOR = MOUSE_ROTATION_VECTOR * Player.get_meta("CameraSensitivity") * delta
+		Parent.rotation_degrees.x += ROTATION_VECTOR.x
+		Player.rotation_degrees.y += ROTATION_VECTOR.y
+		Input.warp_mouse(SavedMousePosition)
+		
+	position.z = ZoomDistance
+		
+	pass
